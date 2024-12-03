@@ -3,8 +3,8 @@ source("utils.R")
 
 # Standard vs. Index
 A <- 10
-N <- 10
-G <- 2
+N <- 6
+G <- 4
 result_standard <- get_sims(attributes=A, groups=G, items=N, name="standard", equal=TRUE)
 result_index <- get_sims(attributes=A, groups=G, items=N, name="index", equal=TRUE)
 df <- data.frame(model=c(rep("standard", 30), rep("index", 30)),
@@ -12,7 +12,8 @@ df <- data.frame(model=c(rep("standard", 30), rep("index", 30)),
                  time=c(result_standard$time, result_index$time),
                  gap=c(result_standard$gap, result_index$gap),
                  status=c(result_standard$status, result_index$status))
-# write.csv(df, paste0("../data/standard_index_n", N, "_g", G, ".csv"))
+sum(abs(df[1:30, 2]-df[31:60, 2])) 
+write.csv(df, paste0("../data/standard_index_n", N, "_g", G, ".csv"))
 
 # Standard vs. Big-M
 A <- 10

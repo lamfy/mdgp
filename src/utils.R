@@ -37,16 +37,16 @@ get_sizes <- function(groups, items, equal=TRUE) {
   N <- items
   if (equal) {
     n_g <- rep(N/G, G)
-    a <- rep(max(1,n_g[1]-sample(0:ceiling(0.05*n_g[1]), 1)), G)
-    b <- rep(max(1,n_g[1]+sample(0:ceiling(0.05*n_g[1]), 1)), G)
+    a <- rep(max(1,floor(n_g[1])-sample(0:ceiling(0.05*n_g[1]), 1)), G)
+    b <- rep(max(1,ceiling(n_g[1])+sample(0:ceiling(0.05*n_g[1]), 1)), G)
   } else {
     n_g <- c(0,sample(x=1:(N-G), size=(G-1), replace=TRUE))
     n_g <- sort(n_g)
     n_g <- diff(n_g)
     n_g <- n_g+1
     n_g <- c(n_g, N-sum(n_g))
-    a <- sapply(X=n_g, FUN=function(x){max(1,x-sample(0:ceiling(0.05*x), 1))})
-    b <- sapply(X=n_g, FUN=function(x){max(1,x+sample(0:ceiling(0.05*x), 1))})
+    a <- sapply(X=n_g, FUN=function(x){max(1,floor(x)-sample(0:ceiling(0.05*x), 1))})
+    b <- sapply(X=n_g, FUN=function(x){max(1,ceiling(x)+sample(0:ceiling(0.05*x), 1))})
   }
   output <- list(a=a, b=b)
   return(output)
