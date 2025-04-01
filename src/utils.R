@@ -4,6 +4,7 @@ pacman::p_load(
   # For Mixed Integer Programme
   ompr, ompr.roi, 
   ROI.plugin.gurobi,
+  ROI.plugin.cplex,
   # For Data Manipulation
   tidyverse
   )
@@ -67,8 +68,8 @@ mdgp_standard <- function(dist, groups, items, max, min) {
   b <- max
   d <- dist
   model <- MIPModel() %>%
-    add_variable(x[i,g], i=1:N, g=1:G, type="binary") %>%
-    add_variable(z[i,j,g], i=1:(N-1), j=(i+1):N, g=1:G, type="binary") %>%
+    add_variable(x[i,g], i=1:N, g=1:G, type="binary", lb=0, ub=1) %>%
+    add_variable(z[i,j,g], i=1:(N-1), j=(i+1):N, g=1:G, type="binary", lb=0, ub=1) %>%
     set_objective(sum_over(d[i,j]*z[i,j,g], i=1:(N-1), j=(i+1):N, g=1:G), "max") %>%
     add_constraint((z[i,j,g]<=x[i,g]), i=1:(N-1), j=(i+1):N, g=1:G) %>%
     add_constraint((z[i,j,g]<=x[j,g]), i=1:(N-1), j=(i+1):N, g=1:G) %>%
@@ -94,8 +95,8 @@ mdgp_index <- function(dist, groups, items, max, min) {
   b <- max[1]
   d <- dist
   model <- MIPModel() %>%
-    add_variable(x[i,j], i=1:(N-1), j=(i+1):N, type="binary") %>%
-    add_variable(y[i], i=2:N, type="binary") %>%
+    add_variable(x[i,j], i=1:(N-1), j=(i+1):N, type="binary", lb=0, ub=1) %>%
+    add_variable(y[i], i=2:N, type="binary", lb=0, ub=1) %>%
     set_objective(sum_over(d[i,j]*x[i,j], i=1:(N-1), j=(i+1):N), "max") %>%
     add_constraint((x[i,j]+x[j,k]-x[i,k])<=1, i=1:(N-2), j=(i+1):(N-1), k=(j+1):N) %>%
     add_constraint((x[i,j]+x[i,k]-x[j,k])<=1, i=1:(N-2), j=(i+1):(N-1), k=(j+1):N) %>%
@@ -107,7 +108,7 @@ mdgp_index <- function(dist, groups, items, max, min) {
     add_constraint((sum_over(x[i,j], j=(i+1):N)+sum_over(x[j,i], j=1:(i-1)))<=b-1, i=2:(N-1)) %>%
     add_constraint((sum_over(x[j,i], j=1:(i-1)))<=b-1, i=N) %>%
     add_constraint((x[i,j]+y[j])<=1, i=1:(N-1), j=(i+1):N) %>%
-    add_constraint((sum_over(x[i,j], i=1:(j-1))+y[j])>=1, j=2:N) %>%
+    # add_constraint((sum_over(x[i,j], i=1:(j-1))+y[j])>=1, j=2:N) %>%
     add_constraint((sum_over(y[i], i=2:N))==G-1)
   return(model)
 }
@@ -178,7 +179,14 @@ get_sims <- function(attributes, groups, items, name, equal=TRUE, n_sim=30,
                      b <- sizes$b
                      model <- mdgp(dist=d, groups=G, items=N, max=b, min=a)
                      result <- tryCatch(
-                       {solve_model(model, with_ROI(solver="gurobi", verbose=verbose, control=list(TimeLimit=TimeLimit)))},
+                       # https://rdrr.io/github/R-Optimization-Infrastructure/ROI.plugin.gurobi/src/R/solver_controls.R
+                       {solve_model(model, with_ROI(solver="gurobi", verbose=verbose, control=list(TimeLimit=TimeLimit
+                                                                                                   # MIPFocus=1,
+                                                                                                   # Cuts=2
+                                                                                                   # Heuristics=0.8 (NO)
+                                                                                                   # Threads=4
+                                                                                                   )))},
+                       # solve_model(model, with_ROI(solver="cplex", control=list(max_time=100))),
                        error = function(e) {NULL}
                      )
                      cat("\nCompleted Iteration ", x, "of ", n_sim, "\n\n")
