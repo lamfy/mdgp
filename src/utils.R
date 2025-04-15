@@ -108,7 +108,7 @@ mdgp_index <- function(dist, groups, items, max, min) {
     add_constraint((sum_over(x[i,j], j=(i+1):N)+sum_over(x[j,i], j=1:(i-1)))<=b-1, i=2:(N-1)) %>%
     add_constraint((sum_over(x[j,i], j=1:(i-1)))<=b-1, i=N) %>%
     add_constraint((x[i,j]+y[j])<=1, i=1:(N-1), j=(i+1):N) %>%
-    # add_constraint((sum_over(x[i,j], i=1:(j-1))+y[j])>=1, j=2:N) %>%
+    add_constraint((sum_over(x[i,j], i=1:(j-1))+y[j])>=1, j=2:N) %>%
     add_constraint((sum_over(y[i], i=2:N))==G-1)
   return(model)
 }
@@ -135,10 +135,8 @@ mdgp_bigm <- function(dist, groups, items, max, min) {
     add_constraint((x[i,j]+x[i,k]-x[j,k])<=1, i=1:(N-2), j=(i+1):(N-1), k=(j+1):N) %>%
     add_constraint((x[i,k]+x[j,k]-x[i,j])<=1, i=1:(N-2), j=(i+1):(N-1), k=(j+1):N) %>%
     add_constraint((sum_over(x[i,j], j=(i+1):N))>=(a[g]-1-(a[g]-1)*(1-y[i,g])), i=1:(N-1), g=1:G) %>%
-    # add_constraint((sum_over(x[i,j], i=1:(j-1)))>=(a[g]-1-(a[g]-1)*(1-y[j,g])), j=N, g=1:G) %>% # Changed to the one below
     add_constraint(0>=(a[g]-1-(a[g]-1)*(1-y[i,g])), i=N, g=1:G) %>%
     add_constraint((sum_over(x[i,j], j=(i+1):N))<=(b[g]-1+(max(b)-b[g]+1)*(1-y[i,g])), i=1:(N-1), g=1:G) %>%
-    # add_constraint((sum_over(x[i,j], i=1:(j-1)))<=(b[g]-1+(max(b)-b[g]+1)*(1-y[j,g])), j=N, g=1:G) %>% # Redundant as b[g] at least 1
     add_constraint((sum_over(y[j,g], g=1:G))==1, j=1) %>%
     add_constraint((x[i,j]+sum_over(y[j,g], g=1:G))<=1, i=1:(N-1), j=(i+1):N) %>%
     add_constraint((sum_over(x[i,j], i=1:(j-1))+sum_over(y[j,g], g=1:G))>=1, j=2:N) %>%
@@ -179,14 +177,8 @@ get_sims <- function(attributes, groups, items, name, equal=TRUE, n_sim=30,
                      b <- sizes$b
                      model <- mdgp(dist=d, groups=G, items=N, max=b, min=a)
                      result <- tryCatch(
-                       # https://rdrr.io/github/R-Optimization-Infrastructure/ROI.plugin.gurobi/src/R/solver_controls.R
                        {solve_model(model, with_ROI(solver="gurobi", verbose=verbose, control=list(TimeLimit=TimeLimit
-                                                                                                   # MIPFocus=1,
-                                                                                                   # Cuts=2
-                                                                                                   # Heuristics=0.8 (NO)
-                                                                                                   # Threads=4
                                                                                                    )))},
-                       # solve_model(model, with_ROI(solver="cplex", control=list(max_time=100))),
                        error = function(e) {NULL}
                      )
                      cat("\nCompleted Iteration ", x, "of ", n_sim, "\n\n")
